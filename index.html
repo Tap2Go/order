@@ -153,6 +153,18 @@
 
 <!-- Container Toast Notification -->
 <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none"></div>
+
+<!-- Container Social Proof (Kiri Bawah) -->
+<div id="socialProofBox" class="fixed bottom-5 left-5 z-40 max-w-xs w-auto bg-white border border-gray-200 rounded-xl shadow-lg p-3.5 flex items-center gap-3 transform transition-all duration-500 translate-y-10 opacity-0 pointer-events-none">
+    <div class="w-9 h-9 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-lg shrink-0">
+        ✓
+    </div>
+    <div class="text-xs leading-snug">
+        <div id="spNama" class="font-bold text-gray-800"></div>
+        <div id="spKota" class="text-gray-500"></div>
+        <div id="spKet" class="text-green-600 font-medium mt-0.5"></div>
+    </div>
+</div>
     
 <script>
     function showToast(pesan, tipe = 'error') {
@@ -403,11 +415,57 @@
         `;
     }
 
-    // Panggil sekali saat halaman pertama kali dibuka
+// 1. Catat Pengunjung Unik (Hanya 1x per browser/perangkat)
+    function catatPengunjungUnik() {
+        if (!localStorage.getItem('tapgo_visited')) {
+            fetch(`${SCRIPT_URL}?action=visit`, { mode: 'no-cors' })
+                .then(() => localStorage.setItem('tapgo_visited', 'true'))
+                .catch(() => {});
+        }
+    }
+
+    // 2. Tampilkan Toast Orderan Terbaru di Kiri Bawah
+    function mulaiSocialProof() {
+        fetch(`${SCRIPT_URL}?action=orders`)
+            .then(res => res.json())
+            .then(orders => {
+                if (!orders || orders.length === 0) return;
+
+                let idx = 0;
+                const box = document.getElementById('socialProofBox');
+
+                function tampilkanBerikutnya() {
+                    const item = orders[idx];
+                    document.getElementById('spNama').innerText = item.nama;
+                    document.getElementById('spKota').innerText = item.kota;
+                    document.getElementById('spKet').innerText = item.keterangan;
+
+                    // Munculkan toast
+                    box.classList.remove('translate-y-10', 'opacity-0');
+
+                    // Sembunyikan setelah 4 detik
+                    setTimeout(() => {
+                        box.classList.add('translate-y-10', 'opacity-0');
+                    }, 4000);
+
+                    idx = (idx + 1) % orders.length;
+                }
+
+                // Muncul pertama kali setelah 3 detik, lalu bergantian setiap 9 detik
+                setTimeout(() => {
+                    tampilkanBerikutnya();
+                    setInterval(tampilkanBerikutnya, 9000);
+                }, 3000);
+            })
+            .catch(() => {});
+    }
+
+    // Jalankan semua saat halaman dibuka
     window.onload = function() {
         updatePilihanKurir();
+        catatPengunjungUnik();
+        mulaiSocialProof();
     };
-
     
 </script>
 </body>
