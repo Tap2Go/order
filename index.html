@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beli Smart Card TapGo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-4 md:p-8">
+
+<div class="max-w-xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- Header -->
+    <div class="bg-blue-600 text-white text-center p-6">
+        <h1 class="text-2xl font-bold">Order Smart Card TapGo</h1>
+        <p class="text-sm mt-2">Kartu Google Review & Buku Menu Digital</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b">
+        <button id="tabRetail" class="flex-1 py-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600" onclick="switchTab('retail')">Customer (Eceran)</button>
+        <button id="tabReseller" class="flex-1 py-3 text-center font-semibold text-gray-500" onclick="switchTab('reseller')">Mitra Reseller</button>
+    </div>
+
+    <!-- Form Area -->
+    <div class="p-6 space-y-4" id="formArea">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+            <input type="text" id="nama" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="Nama Anda atau Bisnis">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">No. WhatsApp</label>
+            <input type="text" id="whatsapp" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="0812xxxxxx">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Alamat Pengiriman Lengkap</label>
+            <textarea id="alamat" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"></textarea>
+        </div>
+
+        <!-- Pilihan Paket Retail -->
+        <div id="paketRetailDiv">
+            <label class="block text-sm font-medium text-gray-700">Pilih Jumlah (Makin banyak makin murah)</label>
+            <select id="paketRetail" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="hitungTotal()">
+                <option value="100000" data-name="1 Kartu (Retail)">1 Kartu - Rp 100.000</option>
+                <option value="190000" data-name="2 Kartu (Retail)">2 Kartu - Rp 190.000 (@95rb)</option>
+                <option value="270000" data-name="3 Kartu (Retail)">3 Kartu - Rp 270.000 (@90rb)</option>
+                <option value="340000" data-name="4 Kartu (Retail)">4 Kartu - Rp 340.000 (@85rb)</option>
+            </select>
+        </div>
+
+        <!-- Pilihan Paket Reseller -->
+        <div id="paketResellerDiv" class="hidden">
+            <label class="block text-sm font-medium text-gray-700">Pilih Paket Reseller</label>
+            <select id="paketReseller" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="hitungTotal()">
+                <option value="300000" data-name="Paket Starter (5 Kartu)">Paket Starter (5 Kartu) - Rp 300.000 (@60rb)</option>
+                <option value="500000" data-name="Paket Pro (10 Kartu)">Paket Pro (10 Kartu) - Rp 500.000 (@50rb)</option>
+            </select>
+        </div>
+
+        <!-- Pembayaran -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Metode Pembayaran</label>
+            <select id="metodeBayar" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="showRekening()">
+                <option value="BSI">Transfer BSI</option>
+                <option value="Mandiri">Transfer Mandiri</option>
+                <option value="Jago">Transfer Bank Jago</option>
+                <option value="QRIS_Dana">QRIS (Via Dana)</option>
+                <option value="QRIS_Mandiri">QRIS (Via Mandiri)</option>
+                <option value="QRIS_BSI">QRIS (Via BSI)</option>
+            </select>
+        </div>
+
+        <button onclick="prosesCheckout()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition">
+            Lanjut Checkout
+        </button>
+    </div>
+
+    <!-- Halaman Checkout (Awalnya Sembunyi) -->
+    <div id="checkoutArea" class="hidden p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Detail Tagihan</h2>
+        <div class="bg-gray-50 p-4 rounded-lg border mb-4">
+            <div class="flex justify-between mb-2"><span class="text-gray-600">Paket:</span> <span id="lblPaket" class="font-bold"></span></div>
+            <div class="flex justify-between mb-2"><span class="text-gray-600">Harga:</span> <span id="lblHarga"></span></div>
+            <div class="flex justify-between mb-2 text-green-600"><span class="text-gray-600">Kode Unik:</span> <span id="lblKode"></span></div>
+            <hr class="my-2">
+            <div class="flex justify-between text-lg"><span class="font-bold text-gray-800">Total Transfer:</span> <span id="lblTotal" class="font-bold text-blue-600"></span></div>
+            <p class="text-xs text-red-500 mt-2">*Mohon transfer TEPAT hingga 3 digit terakhir agar pembayaran terdeteksi.</p>
+        </div>
+
+        <div id="infoRekening" class="bg-blue-50 p-4 rounded-lg border mb-6 text-sm">
+            <!-- Info rek akan disuntik dari JS -->
+        </div>
+
+        <div class="space-y-3">
+            <button id="btnSimpanDatabase" onclick="kirimKeDatabase()" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition">
+                Konfirmasi Pembayaran Selesai
+            </button>
+            <button onclick="konfirmasiWA()" class="w-full bg-white border border-green-600 text-green-600 font-bold py-3 px-4 rounded-md hover:bg-green-50 transition flex items-center justify-center">
+                Hubungi Admin via WhatsApp
+            </button>
+            <button onclick="kembaliKeForm()" class="w-full text-gray-500 underline text-sm mt-2">Batal / Kembali</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURASI PENTING ---
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsYSHyIPX5WFOOhVPDzFO4Xulm4CGfl0__5oQ4NgroXPBhepGgJf9Q-dJRklpbnym4/exec'; // <-- GANTI DENGAN URL APPS SCRIPT
+    const NOMOR_ADMIN = '6281297929294'; // Gunakan 62 untuk API WA
+
+    let currentTab = 'retail';
+    let kodeUnik = 0;
+    let hargaDasar = 0;
+    let totalBayar = 0;
+    let namaPaket = '';
+
+    function switchTab(tab) {
+        currentTab = tab;
+        if (tab === 'retail') {
+            document.getElementById('tabRetail').className = "flex-1 py-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600";
+            document.getElementById('tabReseller').className = "flex-1 py-3 text-center font-semibold text-gray-500";
+            document.getElementById('paketRetailDiv').classList.remove('hidden');
+            document.getElementById('paketResellerDiv').classList.add('hidden');
+        } else {
+            document.getElementById('tabReseller').className = "flex-1 py-3 text-center font-semibold text-blue-600 border-b-2 border-blue-600";
+            document.getElementById('tabRetail').className = "flex-1 py-3 text-center font-semibold text-gray-500";
+            document.getElementById('paketRetailDiv').classList.add('hidden');
+            document.getElementById('paketResellerDiv').classList.remove('hidden');
+        }
+    }
+
+    function hitungTotal() {
+        const selectElement = currentTab === 'retail' ? document.getElementById('paketRetail') : document.getElementById('paketReseller');
+        hargaDasar = parseInt(selectElement.value);
+        namaPaket = selectElement.options[selectElement.selectedIndex].getAttribute('data-name');
+    }
+
+    function showRekening() {
+        const metode = document.getElementById('metodeBayar').value;
+        const info = document.getElementById('infoRekening');
+        let htmlInfo = '';
+
+        if(metode === 'BSI') htmlInfo = '<b>Bank BSI</b><br>No. Rekening: 1234567890<br>A.n: Ahmad Zawawi';
+        else if(metode === 'Mandiri') htmlInfo = '<b>Bank Mandiri</b><br>No. Rekening: 0987654321<br>A.n: Ahmad Zawawi';
+        else if(metode === 'Jago') htmlInfo = '<b>Bank Jago</b><br>No. Rekening: 1122334455<br>A.n: Ahmad Zawawi';
+        else if(metode.includes('QRIS')) {
+            // Karena belum punya QRIS universal, arahkan ke QRIS spesifik. 
+            // Ganti URL gambar dengan link gambar QRIS Anda yang diupload di imgur / postimage
+            htmlInfo = `<b>Pembayaran ${metode.replace('_', ' ')}</b><br>Silakan scan QRIS di bawah ini:<br><img src="https://via.placeholder.com/200?text=Gambar+QRIS+${metode}" class="mt-2 mx-auto w-48 rounded shadow">`;
+        }
+        info.innerHTML = htmlInfo;
+    }
+
+    function prosesCheckout() {
+        const nama = document.getElementById('nama').value;
+        const wa = document.getElementById('whatsapp').value;
+        const alamat = document.getElementById('alamat').value;
+
+        if(!nama || !wa || !alamat) {
+            alert('Mohon lengkapi Nama, WhatsApp, dan Alamat!');
+            return;
+        }
+
+        hitungTotal(); // pastikan harga update
+        kodeUnik = Math.floor(Math.random() * 999) + 1; // 1-999
+        totalBayar = hargaDasar + kodeUnik;
+
+        document.getElementById('lblPaket').innerText = namaPaket;
+        document.getElementById('lblHarga').innerText = 'Rp ' + hargaDasar.toLocaleString('id-ID');
+        document.getElementById('lblKode').innerText = '+ Rp ' + kodeUnik;
+        document.getElementById('lblTotal').innerText = 'Rp ' + totalBayar.toLocaleString('id-ID');
+        
+        showRekening();
+
+        document.getElementById('formArea').classList.add('hidden');
+        document.getElementById('checkoutArea').classList.remove('hidden');
+    }
+
+    function kembaliKeForm() {
+        document.getElementById('formArea').classList.remove('hidden');
+        document.getElementById('checkoutArea').classList.add('hidden');
+    }
+
+    function kirimKeDatabase() {
+        const btn = document.getElementById('btnSimpanDatabase');
+        btn.innerText = "Memproses...";
+        btn.disabled = true;
+
+        const payload = {
+            nama: document.getElementById('nama').value,
+            whatsapp: document.getElementById('whatsapp').value,
+            alamat: document.getElementById('alamat').value,
+            tipe: currentTab,
+            paketNama: namaPaket,
+            metode: document.getElementById('metodeBayar').value,
+            kodeUnik: kodeUnik,
+            totalBayar: totalBayar
+        };
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Penting untuk bypass blokir browser ke Google Script
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        }).then(response => {
+            alert('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.');
+            btn.innerText = "Selesai";
+        }).catch(err => {
+            alert('Terjadi kesalahan saat menyimpan data.');
+            btn.innerText = "Konfirmasi Pembayaran Selesai";
+            btn.disabled = false;
+        });
+    }
+
+    function konfirmasiWA() {
+        const nama = document.getElementById('nama').value;
+        const metode = document.getElementById('metodeBayar').value;
+        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card TapGo.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
+        
+        window.open(`https://api.whatsapp.com/send?phone=${NOMOR_ADMIN}&text=${pesan}`, '_blank');
+    }
+</script>
+</body>
+</html>
