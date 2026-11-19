@@ -54,6 +54,9 @@
                 <option value="300000" data-name="Paket Starter (5 Kartu)">Paket Starter (5 Kartu) - Rp 300.000 (@60rb)</option>
                 <option value="500000" data-name="Paket Pro (10 Kartu)">Paket Pro (10 Kartu) - Rp 500.000 (@50rb)</option>
             </select>
+            <p class="mt-2 text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
+                ℹ️ <b>Info Keanggotaan:</b> Pendaftaran Mitra Reseller dikenakan biaya keanggotaan sebesar <b>Rp 99.000</b> (sekali bayar seumur hidup).
+            </p>
         </div>
 
         <!-- Pengiriman -->
@@ -106,6 +109,10 @@
         <div class="bg-gray-50 p-4 rounded-lg border mb-4">
             <div class="flex justify-between mb-2"><span class="text-gray-600">Paket:</span> <span id="lblPaket" class="font-bold"></span></div>
             <div class="flex justify-between mb-2"><span class="text-gray-600">Harga:</span> <span id="lblHarga"></span></div>
+            <div id="rowBiayaDaftar" class="hidden flex justify-between mb-2">
+                <span class="text-gray-600">Biaya Pendaftaran (Sekali Bayar):</span>
+                <span id="lblBiayaDaftar">Rp 99.000</span>
+            </div>
             <div class="flex justify-between mb-2"><span class="text-gray-600">Ongkir (<span id="lblKurir"></span>):</span> <span id="lblOngkir"></span></div>
             <div class="flex justify-between mb-2 text-green-600"><span class="text-gray-600">Kode Unik:</span> <span id="lblKode"></span></div>
             <hr class="my-2">
@@ -235,6 +242,15 @@
         }
 
         hitungTotal();
+
+        // Cek biaya pendaftaran khusus Reseller
+        if (currentTab === 'reseller') {
+            biayaDaftar = 99000;
+            document.getElementById('rowBiayaDaftar').classList.remove('hidden');
+        } else {
+            biayaDaftar = 0;
+            document.getElementById('rowBiayaDaftar').classList.add('hidden');
+        }
         
         // Ambil data kurir & ongkir
         const selectKurir = document.getElementById('kurir');
@@ -242,7 +258,7 @@
         namaKurir = selectKurir.options[selectKurir.selectedIndex].getAttribute('data-kurir');
 
         kodeUnik = Math.floor(Math.random() * 999) + 1;
-        totalBayar = hargaDasar + ongkir + kodeUnik;
+        totalBayar = hargaDasar + biayaDaftar + ongkir + kodeUnik;
 
         document.getElementById('lblPaket').innerText = namaPaket;
         document.getElementById('lblHarga').innerText = 'Rp ' + hargaDasar.toLocaleString('id-ID');
@@ -250,7 +266,7 @@
         document.getElementById('lblOngkir').innerText = 'Rp ' + ongkir.toLocaleString('id-ID');
         document.getElementById('lblKode').innerText = '+ Rp ' + kodeUnik;
         document.getElementById('lblTotal').innerText = 'Rp ' + totalBayar.toLocaleString('id-ID');
-        
+
         showRekening();
 
         document.getElementById('formArea').classList.add('hidden');
@@ -262,12 +278,15 @@
         btn.innerText = "Memproses...";
         btn.disabled = true;
 
+        // Tambahkan keterangan biaya daftar ke nama paket agar otomatis tercatat di Google Sheet & Dripsender
+        const paketFinal = biayaDaftar > 0 ? `${namaPaket} + Daftar Reseller (99rb)` : namaPaket;
+
         const payload = {
             nama: document.getElementById('nama').value,
             whatsapp: document.getElementById('whatsapp').value,
             alamat: document.getElementById('alamat').value,
             tipe: currentTab,
-            paketNama: namaPaket,
+            paketNama: paketFinal,
             kurir: namaKurir,
             ongkir: ongkir,
             metode: document.getElementById('metodeBayar').value,
@@ -281,10 +300,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(() => {
-            showToast('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.');
+            showToast('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.', 'success');
             btn.innerText = "Selesai";
         }).catch(() => {
-            showToast('Terjadi kesalahan saat menyimpan data.');
+            showToast('Terjadi kesalahan saat menyimpan data.', 'error');
             btn.innerText = "Konfirmasi Pembayaran Selesai";
             btn.disabled = false;
         });
@@ -293,7 +312,9 @@
     function konfirmasiWA() {
         const nama = document.getElementById('nama').value;
         const metode = document.getElementById('metodeBayar').value;
-        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card Tapnex.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}%0A*Ekspedisi:* ${namaKurir} (Rp ${ongkir.toLocaleString('id-ID')})%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
+        const teksDaftar = biayaDaftar > 0 ? `%0A*Biaya Pendaftaran:* Rp 99.000 (Sekali Bayar)` : '';
+        
+        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card TapGo.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}${teksDaftar}%0A*Ekspedisi:* ${namaKurir} (Rp ${ongkir.toLocaleString('id-ID')})%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
         
         window.open(`https://api.whatsapp.com/send?phone=${NOMOR_ADMIN}&text=${pesan}`, '_blank');
     }
