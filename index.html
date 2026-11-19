@@ -129,7 +129,39 @@
     </div>
 </div>
 
+<!-- Container Toast Notification -->
+<div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none"></div>
+    
 <script>
+    function showToast(pesan, tipe = 'error') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+
+        // Atur warna & ikon sesuai tipe (error = merah, success = hijau)
+        const warna = tipe === 'success' 
+            ? 'bg-green-600 text-white' 
+            : 'bg-red-600 text-white';
+        const ikon = tipe === 'success' ? '✅' : '⚠️';
+
+        toast.className = `${warna} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-auto`;
+        toast.innerHTML = `
+            <span class="text-base">${ikon}</span>
+            <span class="flex-1">${pesan}</span>
+        `;
+
+        container.appendChild(toast);
+
+        // Animasi muncul
+        setTimeout(() => {
+            toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+        }, 10);
+
+        // Animasi hilang otomatis setelah 3,5 detik
+        setTimeout(() => {
+            toast.classList.add('translate-y-[-20px]', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
     // --- KONFIGURASI PENTING ---
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsYSHyIPX5WFOOhVPDzFO4Xulm4CGfl0__5oQ4NgroXPBhepGgJf9Q-dJRklpbnym4/exec'; // <-- GANTI DENGAN URL APPS SCRIPT
     const NOMOR_ADMIN = '6281297929294'; // Gunakan 62 untuk API WA
@@ -198,7 +230,7 @@
         const alamat = document.getElementById('alamat').value;
 
         if(!nama || !wa || !alamat) {
-            alert('Mohon lengkapi Nama, WhatsApp, dan Alamat!');
+            showToast('Mohon lengkapi Nama, WhatsApp, dan Alamat!');
             return;
         }
 
@@ -249,10 +281,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }).then(() => {
-            alert('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.');
+            showToast('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.');
             btn.innerText = "Selesai";
         }).catch(() => {
-            alert('Terjadi kesalahan saat menyimpan data.');
+            showToast('Terjadi kesalahan saat menyimpan data.');
             btn.innerText = "Konfirmasi Pembayaran Selesai";
             btn.disabled = false;
         });
