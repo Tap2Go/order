@@ -56,6 +56,33 @@
             </select>
         </div>
 
+        <!-- Pengiriman -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Wilayah Tujuan</label>
+                <select id="wilayahTujuan" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="updatePilihanKurir()">
+                    <option value="banten_cilegon">Kota Cilegon & Serang</option>
+                    <option value="banten_lain">Banten Lainnya (Tangerang/Pandeglang/Lebak)</option>
+                    <option value="jabodetabek">Jakarta, Bogor, Depok, Bekasi</option>
+                    <option value="jabar">Jawa Barat (Bandung, Cirebon, dll)</option>
+                    <option value="jateng_diy">Jawa Tengah & DI Yogyakarta</option>
+                    <option value="jatim">Jawa Timur (Surabaya, Malang, dll)</option>
+                    <option value="sumatera_selatan">Lampung, Palembang, Bengkulu, Jambi</option>
+                    <option value="sumatera_utara">Medan, Padang, Pekanbaru, Aceh</option>
+                    <option value="bali_ntb">Bali & NTB</option>
+                    <option value="kalimantan">Kalimantan</option>
+                    <option value="sulawesi">Sulawesi</option>
+                    <option value="papua_maluku">NTT, Maluku & Papua</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Pilih Ekspedisi (Termurah)</label>
+                <select id="kurir" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                    <!-- Opsi diisi otomatis oleh JavaScript -->
+                </select>
+            </div>
+        </div>
+
         <!-- Pembayaran -->
         <div>
             <label class="block text-sm font-medium text-gray-700">Metode Pembayaran</label>
@@ -79,6 +106,7 @@
         <div class="bg-gray-50 p-4 rounded-lg border mb-4">
             <div class="flex justify-between mb-2"><span class="text-gray-600">Paket:</span> <span id="lblPaket" class="font-bold"></span></div>
             <div class="flex justify-between mb-2"><span class="text-gray-600">Harga:</span> <span id="lblHarga"></span></div>
+            <div class="flex justify-between mb-2"><span class="text-gray-600">Ongkir (<span id="lblKurir"></span>):</span> <span id="lblOngkir"></span></div>
             <div class="flex justify-between mb-2 text-green-600"><span class="text-gray-600">Kode Unik:</span> <span id="lblKode"></span></div>
             <hr class="my-2">
             <div class="flex justify-between text-lg"><span class="font-bold text-gray-800">Total Transfer:</span> <span id="lblTotal" class="font-bold text-blue-600"></span></div>
@@ -174,12 +202,20 @@
             return;
         }
 
-        hitungTotal(); // pastikan harga update
-        kodeUnik = Math.floor(Math.random() * 999) + 1; // 1-999
-        totalBayar = hargaDasar + kodeUnik;
+        hitungTotal();
+        
+        // Ambil data kurir & ongkir
+        const selectKurir = document.getElementById('kurir');
+        ongkir = parseInt(selectKurir.value);
+        namaKurir = selectKurir.options[selectKurir.selectedIndex].getAttribute('data-kurir');
+
+        kodeUnik = Math.floor(Math.random() * 999) + 1;
+        totalBayar = hargaDasar + ongkir + kodeUnik;
 
         document.getElementById('lblPaket').innerText = namaPaket;
         document.getElementById('lblHarga').innerText = 'Rp ' + hargaDasar.toLocaleString('id-ID');
+        document.getElementById('lblKurir').innerText = namaKurir;
+        document.getElementById('lblOngkir').innerText = 'Rp ' + ongkir.toLocaleString('id-ID');
         document.getElementById('lblKode').innerText = '+ Rp ' + kodeUnik;
         document.getElementById('lblTotal').innerText = 'Rp ' + totalBayar.toLocaleString('id-ID');
         
@@ -187,11 +223,6 @@
 
         document.getElementById('formArea').classList.add('hidden');
         document.getElementById('checkoutArea').classList.remove('hidden');
-    }
-
-    function kembaliKeForm() {
-        document.getElementById('formArea').classList.remove('hidden');
-        document.getElementById('checkoutArea').classList.add('hidden');
     }
 
     function kirimKeDatabase() {
@@ -205,6 +236,8 @@
             alamat: document.getElementById('alamat').value,
             tipe: currentTab,
             paketNama: namaPaket,
+            kurir: namaKurir,
+            ongkir: ongkir,
             metode: document.getElementById('metodeBayar').value,
             kodeUnik: kodeUnik,
             totalBayar: totalBayar
@@ -212,15 +245,13 @@
 
         fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // Penting untuk bypass blokir browser ke Google Script
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }).then(response => {
+        }).then(() => {
             alert('Data berhasil disimpan! Mohon hubungi admin jika belum menerima pesan otomatis.');
             btn.innerText = "Selesai";
-        }).catch(err => {
+        }).catch(() => {
             alert('Terjadi kesalahan saat menyimpan data.');
             btn.innerText = "Konfirmasi Pembayaran Selesai";
             btn.disabled = false;
@@ -230,10 +261,56 @@
     function konfirmasiWA() {
         const nama = document.getElementById('nama').value;
         const metode = document.getElementById('metodeBayar').value;
-        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card TapGo.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
+        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card Tapnex.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}%0A*Ekspedisi:* ${namaKurir} (Rp ${ongkir.toLocaleString('id-ID')})%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
         
         window.open(`https://api.whatsapp.com/send?phone=${NOMOR_ADMIN}&text=${pesan}`, '_blank');
     }
+
+    function kembaliKeForm() {
+        document.getElementById('formArea').classList.remove('hidden');
+        document.getElementById('checkoutArea').classList.add('hidden');
+    }
+
+    
+
+    // Estimasi tarif termurah per 1 kg dari Kota Cilegon, Banten (bisa Anda sesuaikan kapan saja)
+    const TARIF_CILEGON = {
+        banten_cilegon:   { pos: 8000,  jne: 9000,  jnt: 9000  },
+        banten_lain:      { pos: 10000, jne: 11000, jnt: 11000 },
+        jabodetabek:      { pos: 11000, jne: 12000, jnt: 12000 },
+        jabar:            { pos: 13000, jne: 15000, jnt: 15000 },
+        jateng_diy:       { pos: 16000, jne: 18000, jnt: 18000 },
+        jatim:            { pos: 18000, jne: 20000, jnt: 20000 },
+        sumatera_selatan: { pos: 15000, jne: 18000, jnt: 18000 },
+        sumatera_utara:   { pos: 24000, jne: 28000, jnt: 27000 },
+        bali_ntb:         { pos: 22000, jne: 25000, jnt: 25000 },
+        kalimantan:       { pos: 30000, jne: 34000, jnt: 33000 },
+        sulawesi:         { pos: 34000, jne: 38000, jnt: 37000 },
+        papua_maluku:     { pos: 50000, jne: 58000, jnt: 55000 }
+    };
+
+    let ongkir = 0;
+    let namaKurir = '';
+
+    // Mengisi dropdown kurir otomatis dengan harga sesuai wilayah
+    function updatePilihanKurir() {
+        const wilayah = document.getElementById('wilayahTujuan').value;
+        const tarif = TARIF_CILEGON[wilayah];
+        const selectKurir = document.getElementById('kurir');
+
+        selectKurir.innerHTML = `
+            <option value="${tarif.pos}" data-kurir="POS Reguler">POS Reguler - Rp ${tarif.pos.toLocaleString('id-ID')}</option>
+            <option value="${tarif.jne}" data-kurir="JNE OKE/Reg">JNE OKE/Reg - Rp ${tarif.jne.toLocaleString('id-ID')}</option>
+            <option value="${tarif.jnt}" data-kurir="J&T EZ">J&T EZ - Rp ${tarif.jnt.toLocaleString('id-ID')}</option>
+        `;
+    }
+
+    // Panggil sekali saat halaman pertama kali dibuka
+    window.onload = function() {
+        updatePilihanKurir();
+    };
+
+    
 </script>
 </body>
 </html>
