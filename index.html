@@ -40,10 +40,10 @@
         <div id="paketRetailDiv">
             <label class="block text-sm font-medium text-gray-700">Pilih Jumlah (Makin banyak makin murah)</label>
             <select id="paketRetail" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="hitungTotal()">
-                <option value="100000" data-name="1 Kartu (Retail)">1 Kartu - Rp 100.000</option>
-                <option value="190000" data-name="2 Kartu (Retail)">2 Kartu - Rp 190.000 (@95rb)</option>
-                <option value="270000" data-name="3 Kartu (Retail)">3 Kartu - Rp 270.000 (@90rb)</option>
-                <option value="340000" data-name="4 Kartu (Retail)">4 Kartu - Rp 340.000 (@85rb)</option>
+                <option value="100000" data-name="1 Kartu (Retail)" data-qty="1">1 Kartu - Rp 100.000</option>
+                <option value="190000" data-name="2 Kartu (Retail)" data-qty="2">2 Kartu - Rp 190.000 (@95rb)</option>
+                <option value="270000" data-name="3 Kartu (Retail)" data-qty="3">3 Kartu - Rp 270.000 (@90rb)</option>
+                <option value="340000" data-name="4 Kartu (Retail)" data-qty="4">4 Kartu - Rp 340.000 (@85rb)</option>
             </select>
         </div>
 
@@ -51,12 +51,22 @@
         <div id="paketResellerDiv" class="hidden">
             <label class="block text-sm font-medium text-gray-700">Pilih Paket Reseller</label>
             <select id="paketReseller" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" onchange="hitungTotal()">
-                <option value="300000" data-name="Paket Starter (5 Kartu)">Paket Starter (5 Kartu) - Rp 300.000 (@60rb)</option>
-                <option value="500000" data-name="Paket Pro (10 Kartu)">Paket Pro (10 Kartu) - Rp 500.000 (@50rb)</option>
+                <option value="300000" data-name="Paket Starter (5 Kartu)" data-qty="5">Paket Starter (5 Kartu) - Rp 300.000 (@60rb)</option>
+                <option value="500000" data-name="Paket Pro (10 Kartu)" data-qty="10">Paket Pro (10 Kartu) - Rp 500.000 (@50rb)</option>
             </select>
             <p class="mt-2 text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
                 ℹ️ <b>Info Keanggotaan:</b> Pendaftaran Mitra Reseller dikenakan biaya keanggotaan sebesar <b>Rp 99.000</b> (sekali bayar seumur hidup).
             </p>
+        </div>
+        <!-- Pilihan Varian -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Pilih Varian Kartu</label>
+            <select id="varian" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                <option value="0" data-varian="Putih">Putih</option>
+                <option value="0" data-varian="Hitam">Hitam</option>
+                <option value="5000" data-varian="Putih Custom">Putih Custom (+Rp 5.000/kartu)</option>
+                <option value="5000" data-varian="Hitam Custom">Hitam Custom (+Rp 5.000/kartu)</option>
+            </select>
         </div>
 
         <!-- Pengiriman -->
@@ -109,6 +119,11 @@
         <div class="bg-gray-50 p-4 rounded-lg border mb-4">
             <div class="flex justify-between mb-2"><span class="text-gray-600">Paket:</span> <span id="lblPaket" class="font-bold"></span></div>
             <div class="flex justify-between mb-2"><span class="text-gray-600">Harga:</span> <span id="lblHarga"></span></div>
+            <div class="flex justify-between mb-2"><span class="text-gray-600">Varian:</span> <span id="lblVarian" class="font-medium"></span></div>
+            <div id="rowBiayaCustom" class="hidden flex justify-between mb-2">
+                <span class="text-gray-600">Biaya Custom:</span>
+                <span id="lblBiayaCustom"></span>
+            </div>
             <div id="rowBiayaDaftar" class="hidden flex justify-between mb-2">
                 <span class="text-gray-600">Biaya Pendaftaran (Sekali Bayar):</span>
                 <span id="lblBiayaDaftar">Rp 99.000</span>
@@ -178,6 +193,10 @@
     let hargaDasar = 0;
     let totalBayar = 0;
     let namaPaket = '';
+    let biayaDaftar = 0;
+    let jumlahKartu = 1;
+    let namaVarian = '';
+    let biayaCustom = 0;
 
     function switchTab(tab) {
         currentTab = tab;
@@ -196,8 +215,10 @@
 
     function hitungTotal() {
         const selectElement = currentTab === 'retail' ? document.getElementById('paketRetail') : document.getElementById('paketReseller');
+        const selectedOpt = selectElement.options[selectElement.selectedIndex];
         hargaDasar = parseInt(selectElement.value);
-        namaPaket = selectElement.options[selectElement.selectedIndex].getAttribute('data-name');
+        namaPaket = selectedOpt.getAttribute('data-name');
+        jumlahKartu = parseInt(selectedOpt.getAttribute('data-qty'));
     }
 
     function showRekening() {
@@ -231,6 +252,14 @@
         info.innerHTML = htmlInfo;
     }
 
+    function hitungTotal() {
+        const selectElement = currentTab === 'retail' ? document.getElementById('paketRetail') : document.getElementById('paketReseller');
+        const selectedOpt = selectElement.options[selectElement.selectedIndex];
+        hargaDasar = parseInt(selectElement.value);
+        namaPaket = selectedOpt.getAttribute('data-name');
+        jumlahKartu = parseInt(selectedOpt.getAttribute('data-qty'));
+    }
+
     function prosesCheckout() {
         const nama = document.getElementById('nama').value;
         const wa = document.getElementById('whatsapp').value;
@@ -243,6 +272,19 @@
 
         hitungTotal();
 
+        // Hitung Varian & Biaya Custom
+        const selectVarian = document.getElementById('varian');
+        const hargaCustomPerPcs = parseInt(selectVarian.value);
+        namaVarian = selectVarian.options[selectVarian.selectedIndex].getAttribute('data-varian');
+        biayaCustom = hargaCustomPerPcs * jumlahKartu; // Hapus "* jumlahKartu" jika biaya 5.000 flat per order
+
+        if (biayaCustom > 0) {
+            document.getElementById('rowBiayaCustom').classList.remove('hidden');
+            document.getElementById('lblBiayaCustom').innerText = 'Rp ' + biayaCustom.toLocaleString('id-ID');
+        } else {
+            document.getElementById('rowBiayaCustom').classList.add('hidden');
+        }
+
         // Cek biaya pendaftaran khusus Reseller
         if (currentTab === 'reseller') {
             biayaDaftar = 99000;
@@ -251,17 +293,18 @@
             biayaDaftar = 0;
             document.getElementById('rowBiayaDaftar').classList.add('hidden');
         }
-        
+
         // Ambil data kurir & ongkir
         const selectKurir = document.getElementById('kurir');
         ongkir = parseInt(selectKurir.value);
         namaKurir = selectKurir.options[selectKurir.selectedIndex].getAttribute('data-kurir');
 
         kodeUnik = Math.floor(Math.random() * 999) + 1;
-        totalBayar = hargaDasar + biayaDaftar + ongkir + kodeUnik;
+        totalBayar = hargaDasar + biayaCustom + biayaDaftar + ongkir + kodeUnik;
 
         document.getElementById('lblPaket').innerText = namaPaket;
         document.getElementById('lblHarga').innerText = 'Rp ' + hargaDasar.toLocaleString('id-ID');
+        document.getElementById('lblVarian').innerText = namaVarian;
         document.getElementById('lblKurir').innerText = namaKurir;
         document.getElementById('lblOngkir').innerText = 'Rp ' + ongkir.toLocaleString('id-ID');
         document.getElementById('lblKode').innerText = '+ Rp ' + kodeUnik;
@@ -278,8 +321,9 @@
         btn.innerText = "Memproses...";
         btn.disabled = true;
 
-        // Tambahkan keterangan biaya daftar ke nama paket agar otomatis tercatat di Google Sheet & Dripsender
-        const paketFinal = biayaDaftar > 0 ? `${namaPaket} + Daftar Reseller (99rb)` : namaPaket;
+        // Gabungkan info varian & biaya daftar ke nama paket agar otomatis masuk Google Sheet & Dripsender
+        let paketFinal = `${namaPaket} - ${namaVarian}`;
+        if (biayaDaftar > 0) paketFinal += ` + Daftar Reseller (99rb)`;
 
         const payload = {
             nama: document.getElementById('nama').value,
@@ -312,10 +356,11 @@
     function konfirmasiWA() {
         const nama = document.getElementById('nama').value;
         const metode = document.getElementById('metodeBayar').value;
+        const teksCustom = biayaCustom > 0 ? `%0A*Biaya Custom:* Rp ${biayaCustom.toLocaleString('id-ID')}` : '';
         const teksDaftar = biayaDaftar > 0 ? `%0A*Biaya Pendaftaran:* Rp 99.000 (Sekali Bayar)` : '';
-        
-        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card TapGo.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}${teksDaftar}%0A*Ekspedisi:* ${namaKurir} (Rp ${ongkir.toLocaleString('id-ID')})%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
-        
+
+        const pesan = `Halo Admin, saya telah melakukan pemesanan Smart Card TapGo.%0A%0A*Nama:* ${nama}%0A*Paket:* ${namaPaket}%0A*Varian:* ${namaVarian}${teksCustom}${teksDaftar}%0A*Ekspedisi:* ${namaKurir} (Rp ${ongkir.toLocaleString('id-ID')})%0A*Metode Bayar:* ${metode}%0A*Total Transfer:* Rp ${totalBayar.toLocaleString('id-ID')}%0A%0AMohon segera diproses, ini bukti transfernya: (lampirkan gambar)`;
+
         window.open(`https://api.whatsapp.com/send?phone=${NOMOR_ADMIN}&text=${pesan}`, '_blank');
     }
 
