@@ -427,13 +427,17 @@
         `;
     }
 
-// 1. Catat Pengunjung Unik (Hanya 1x per browser/perangkat)
+    // Catat Pengunjung Unik & Total Kunjungan
     function catatPengunjungUnik() {
-        if (!localStorage.getItem('tapgo_visited')) {
-            fetch(`${SCRIPT_URL}?action=visit`, { mode: 'no-cors' })
-                .then(() => localStorage.setItem('tapgo_visited', 'true'))
-                .catch(() => {});
-        }
+        const isUnique = !localStorage.getItem('tapgo_visited');
+        fetch(`${SCRIPT_URL}?action=visit&unique=${isUnique}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok' && isUnique) {
+                    localStorage.setItem('tapgo_visited', 'true');
+                }
+            })
+            .catch(() => {});
     }
 
     // 2. Tampilkan Toast Orderan Terbaru di Kiri Bawah
